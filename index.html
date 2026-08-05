@@ -1,0 +1,1647 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Cosmic Particle Heart</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      color-scheme: dark;
+      --rose: #ff78b7;
+      --rose-soft: rgba(255, 120, 183, 0.74);
+      --panel: rgba(12, 7, 18, 0.54);
+      --panel-strong: rgba(19, 9, 26, 0.76);
+      --stroke: rgba(255, 177, 217, 0.22);
+      --text: rgba(255, 238, 248, 0.92);
+      --muted: rgba(255, 221, 239, 0.64);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      touch-action: none;
+      overscroll-behavior: none;
+      background: #000004;
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(255, 49, 118, 0.13), transparent 32%),
+        radial-gradient(circle at 30% 26%, rgba(255, 176, 93, 0.08), transparent 22%),
+        radial-gradient(circle at 72% 70%, rgba(170, 94, 255, 0.08), transparent 28%),
+        linear-gradient(to bottom, rgba(0, 0, 8, 0.08), rgba(0, 0, 0, 0.64));
+      mix-blend-mode: screen;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.27;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 96px 96px;
+      mask-image: radial-gradient(circle at center, black, transparent 72%);
+    }
+
+    #scene {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    #scene:active {
+      cursor: grabbing;
+    }
+
+    .logo {
+      position: fixed;
+      top: max(22px, env(safe-area-inset-top));
+      left: max(24px, env(safe-area-inset-left));
+      z-index: 5;
+      pointer-events: none;
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 0.88;
+      color: #ffe6f3;
+      text-shadow:
+        0 0 8px rgba(255, 112, 182, 0.85),
+        0 0 24px rgba(255, 67, 148, 0.52),
+        0 0 56px rgba(255, 38, 112, 0.33);
+      filter: drop-shadow(0 0 18px rgba(255, 82, 158, 0.36));
+    }
+
+    .logo .primary {
+      display: block;
+      font-size: clamp(27px, 3.2vw, 48px);
+      font-weight: 600;
+      font-style: italic;
+    }
+
+    .logo .secondary {
+      display: block;
+      margin-top: 7px;
+      font-size: clamp(11px, 1.08vw, 16px);
+      font-weight: 400;
+      color: rgba(255, 205, 229, 0.88);
+    }
+
+    .prompt-panel {
+      position: fixed;
+      top: max(92px, calc(env(safe-area-inset-top) + 78px));
+      right: max(20px, env(safe-area-inset-right));
+      z-index: 6;
+      width: clamp(286px, 25vw, 376px);
+      max-height: min(66vh, 620px);
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid var(--stroke);
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--panel-strong), rgba(5, 3, 9, 0.45));
+      box-shadow:
+        0 18px 70px rgba(0, 0, 0, 0.38),
+        inset 0 0 38px rgba(255, 103, 171, 0.08);
+      backdrop-filter: blur(18px) saturate(1.22);
+      transition: transform 360ms ease, opacity 360ms ease;
+    }
+
+    .prompt-panel[data-collapsed="true"] {
+      transform: translateX(calc(100% - 42px));
+      opacity: 0.8;
+    }
+
+    .prompt-toggle {
+      width: 42px;
+      min-height: 100%;
+      border: 0;
+      border-right: 1px solid rgba(255, 177, 217, 0.17);
+      border-radius: 0;
+      color: #ffd7ea;
+      background: rgba(255, 107, 178, 0.08);
+      font: 600 11px/1 ui-sans-serif, system-ui, sans-serif;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      cursor: pointer;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+
+    .prompt-toggle:focus-visible,
+    .tool-button:focus-visible {
+      outline: 2px solid rgba(255, 150, 204, 0.86);
+      outline-offset: 3px;
+    }
+
+    .prompt-content {
+      min-width: 0;
+      padding: 18px 18px 20px 17px;
+      transition: opacity 220ms ease;
+    }
+
+    .prompt-panel[data-collapsed="true"] .prompt-content {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .prompt-content h2 {
+      margin: 0 0 12px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 18px;
+      line-height: 1.15;
+      font-weight: 500;
+      color: #ffe1f0;
+      text-shadow: 0 0 18px rgba(255, 89, 166, 0.46);
+    }
+
+    .prompt-content p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.62;
+      overflow-wrap: anywhere;
+    }
+
+    .toolbar {
+      position: fixed;
+      left: 50%;
+      bottom: max(20px, calc(env(safe-area-inset-bottom) + 16px));
+      z-index: 7;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      max-width: calc(100vw - 28px);
+      padding: 8px;
+      border: 1px solid rgba(255, 195, 226, 0.18);
+      border-radius: 8px;
+      background: rgba(8, 5, 13, 0.57);
+      box-shadow:
+        0 18px 62px rgba(0, 0, 0, 0.42),
+        inset 0 0 28px rgba(255, 117, 183, 0.08);
+      backdrop-filter: blur(16px) saturate(1.25);
+    }
+
+    .gesture-hint {
+      position: fixed;
+      left: max(22px, env(safe-area-inset-left));
+      bottom: max(26px, calc(env(safe-area-inset-bottom) + 20px));
+      z-index: 5;
+      max-width: min(310px, calc(100vw - 44px));
+      padding: 9px 11px;
+      border: 1px solid rgba(255, 195, 226, 0.16);
+      border-radius: 8px;
+      color: rgba(255, 226, 241, 0.72);
+      background: rgba(8, 5, 13, 0.4);
+      box-shadow: inset 0 0 24px rgba(255, 117, 183, 0.06);
+      backdrop-filter: blur(12px) saturate(1.2);
+      font-size: 11px;
+      line-height: 1.25;
+      letter-spacing: 0;
+      pointer-events: none;
+      overflow-wrap: anywhere;
+      transition: opacity 420ms ease, transform 420ms ease, visibility 420ms ease;
+    }
+
+    .gesture-hint.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(8px);
+    }
+
+    .gesture-hint.is-awake {
+      color: rgba(255, 245, 251, 0.96);
+      border-color: rgba(255, 178, 219, 0.42);
+      background: rgba(35, 9, 30, 0.64);
+      box-shadow:
+        0 0 26px rgba(255, 96, 174, 0.24),
+        inset 0 0 26px rgba(255, 117, 183, 0.11);
+    }
+
+    .hand-status {
+      position: fixed;
+      right: max(22px, env(safe-area-inset-right));
+      bottom: max(26px, calc(env(safe-area-inset-bottom) + 20px));
+      z-index: 5;
+      max-width: min(300px, calc(100vw - 44px));
+      padding: 9px 11px;
+      border: 1px solid rgba(255, 195, 226, 0.16);
+      border-radius: 8px;
+      color: rgba(255, 226, 241, 0.72);
+      background: rgba(8, 5, 13, 0.4);
+      box-shadow: inset 0 0 24px rgba(255, 117, 183, 0.06);
+      backdrop-filter: blur(12px) saturate(1.2);
+      font-size: 11px;
+      line-height: 1.25;
+      letter-spacing: 0;
+      pointer-events: none;
+      overflow-wrap: anywhere;
+      transition: opacity 300ms ease, transform 300ms ease, visibility 300ms ease;
+    }
+
+    .hand-status.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(8px);
+    }
+
+    .hand-status.is-active {
+      color: rgba(255, 245, 251, 0.96);
+      border-color: rgba(255, 178, 219, 0.42);
+      background: rgba(35, 9, 30, 0.64);
+      box-shadow:
+        0 0 26px rgba(255, 96, 174, 0.24),
+        inset 0 0 26px rgba(255, 117, 183, 0.11);
+    }
+
+    .camera-feed {
+      position: fixed;
+      right: max(22px, env(safe-area-inset-right));
+      bottom: max(78px, calc(env(safe-area-inset-bottom) + 72px));
+      z-index: 4;
+      width: 116px;
+      height: 86px;
+      border: 1px solid rgba(255, 195, 226, 0.18);
+      border-radius: 8px;
+      object-fit: cover;
+      opacity: 0;
+      visibility: hidden;
+      transform: scaleX(-1);
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.36);
+      transition: opacity 300ms ease, visibility 300ms ease;
+    }
+
+    .camera-feed.is-visible {
+      opacity: 0.52;
+      visibility: visible;
+    }
+
+    .touch-aura {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 4;
+      width: 168px;
+      height: 168px;
+      margin: -84px 0 0 -84px;
+      border: 1px solid rgba(255, 226, 244, 0.55);
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate3d(-999px, -999px, 0) scale(0.6);
+      background:
+        radial-gradient(circle, rgba(255, 255, 255, 0.35) 0 5%, rgba(255, 111, 188, 0.22) 6% 24%, transparent 62%),
+        conic-gradient(from 0deg, transparent, rgba(255, 130, 197, 0.9), transparent, rgba(255, 216, 131, 0.76), transparent);
+      box-shadow:
+        0 0 28px rgba(255, 101, 181, 0.62),
+        0 0 86px rgba(255, 70, 148, 0.34);
+      mix-blend-mode: screen;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .touch-aura.is-active {
+      opacity: 0.86;
+      transform: translate3d(var(--x), var(--y), 0) scale(1);
+    }
+
+    .touch-aura.is-burst {
+      animation: gestureBurst 680ms ease-out both;
+    }
+
+    @keyframes gestureBurst {
+      0% {
+        opacity: 0.95;
+        transform: translate3d(var(--x), var(--y), 0) scale(0.54);
+        filter: brightness(1.5);
+      }
+      100% {
+        opacity: 0;
+        transform: translate3d(var(--x), var(--y), 0) scale(1.95);
+        filter: brightness(1);
+      }
+    }
+
+    .tool-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 48px;
+      height: 42px;
+      padding: 0 13px;
+      border: 1px solid rgba(255, 186, 224, 0.2);
+      border-radius: 8px;
+      color: rgba(255, 235, 246, 0.92);
+      background: linear-gradient(180deg, rgba(255, 113, 184, 0.14), rgba(255, 113, 184, 0.045));
+      box-shadow: inset 0 0 20px rgba(255, 116, 184, 0.055);
+      font-size: 12px;
+      line-height: 1;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .tool-button:hover,
+    .tool-button[aria-pressed="true"] {
+      transform: translateY(-1px);
+      border-color: rgba(255, 166, 213, 0.52);
+      color: #fff6fb;
+      background: linear-gradient(180deg, rgba(255, 101, 181, 0.26), rgba(255, 138, 194, 0.08));
+    }
+
+    .tool-button::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 10px);
+      transform: translateX(-50%) translateY(4px);
+      width: max-content;
+      max-width: 180px;
+      padding: 7px 9px;
+      border: 1px solid rgba(255, 194, 226, 0.18);
+      border-radius: 6px;
+      background: rgba(8, 4, 12, 0.9);
+      color: rgba(255, 235, 246, 0.9);
+      font-size: 11px;
+      line-height: 1.1;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 140ms ease, transform 140ms ease;
+    }
+
+    .tool-button:hover::after {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .tool-button.scatter {
+      min-width: 96px;
+      gap: 7px;
+      color: #ffe8f5;
+    }
+
+    .tool-button.hand {
+      min-width: 88px;
+      gap: 7px;
+    }
+
+    .spark-icon {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, #fff 0 11%, #ffd0e8 12% 23%, transparent 24%),
+        conic-gradient(from 0deg, transparent, #ff78ba, transparent, #ffd883, transparent);
+      box-shadow: 0 0 14px rgba(255, 105, 178, 0.72);
+      flex: 0 0 auto;
+    }
+
+    .hand-icon {
+      position: relative;
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+    }
+
+    .hand-icon::before,
+    .hand-icon::after {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff 0 14%, #ffc6e2 15% 34%, transparent 36%);
+      box-shadow: 0 0 14px rgba(255, 113, 184, 0.72);
+    }
+
+    .hand-icon::after {
+      inset: 6px 0 0 6px;
+      opacity: 0.74;
+    }
+
+    .loading {
+      position: fixed;
+      inset: 0;
+      z-index: 9;
+      display: grid;
+      place-items: center;
+      color: rgba(255, 217, 238, 0.88);
+      background: #000004;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px;
+      opacity: 1;
+      transition: opacity 700ms ease, visibility 700ms ease;
+    }
+
+    .loading.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .no-webgl {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: #000004;
+      color: rgba(255, 232, 244, 0.9);
+      text-align: center;
+      font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    @media (max-width: 760px) {
+      .logo {
+        top: max(17px, env(safe-area-inset-top));
+        left: max(18px, env(safe-area-inset-left));
+      }
+
+      .prompt-panel {
+        display: none;
+      }
+
+      .toolbar {
+        gap: 6px;
+        padding: 7px;
+      }
+
+      .gesture-hint {
+        left: 50%;
+        bottom: max(88px, calc(env(safe-area-inset-bottom) + 84px));
+        transform: translateX(-50%);
+        max-width: calc(100vw - 44px);
+        text-align: center;
+      }
+
+      .gesture-hint.is-hidden {
+        transform: translateX(-50%) translateY(8px);
+      }
+
+      .hand-status {
+        left: 50%;
+        right: auto;
+        bottom: max(144px, calc(env(safe-area-inset-bottom) + 138px));
+        transform: translateX(-50%);
+        max-width: calc(100vw - 44px);
+        text-align: center;
+      }
+
+      .hand-status.is-hidden {
+        transform: translateX(-50%) translateY(8px);
+      }
+
+      .camera-feed {
+        right: max(14px, env(safe-area-inset-right));
+        bottom: max(142px, calc(env(safe-area-inset-bottom) + 136px));
+        width: 88px;
+        height: 66px;
+      }
+
+      .tool-button {
+        min-width: 42px;
+        height: 40px;
+        padding: 0 10px;
+        font-size: 11px;
+      }
+
+      .tool-button.scatter {
+        min-width: 48px;
+      }
+
+      .tool-button.hand {
+        min-width: 48px;
+      }
+
+      .scatter .button-label {
+        display: none;
+      }
+
+      .hand .button-label {
+        display: none;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .tool-button {
+        min-width: 38px;
+        padding: 0 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Design direction: full-screen cinematic space, not a landing page.
+    The central particle heart is kept optically clear with a dense heart volume,
+    faint outline filaments, short additive trails, and a slower outer stardust shell.
+  -->
+  <canvas id="scene" aria-label="Interactive 3D cosmic particle heart"></canvas>
+  <div id="touchAura" class="touch-aura" aria-hidden="true"></div>
+
+  <div class="logo" aria-label="Cosmic Particle Heart">
+    <span class="primary">COSMIC</span>
+    <span class="secondary">PARTICLE HEART</span>
+  </div>
+
+  <aside class="prompt-panel" data-collapsed="false" aria-label="AI Video Generation Prompt">
+    <button class="prompt-toggle" type="button" aria-label="Toggle AI Video Generation Prompt">Prompt</button>
+    <div class="prompt-content">
+      <h2>AI Video Generation Prompt</h2>
+      <p>
+        Black cosmic space background, a glowing particle heart suspended inside a soft cocoon of crimson, pink, and warm golden stardust, heart particles with gentle halos and visible trailing light, surrounding particles wrapping around the heart like a nebula shell, strong depth of field, stardust gathering and dispersing into a heart shape, nebula mist, light trails, vortex flow, abstract luminous clusters, slow camera push-in, dreamy, ethereal, futuristic, healing, premium cinematic look, ultra high definition, slow motion, volumetric light, soft bloom, black background, high contrast, quiet cosmic atmosphere.
+      </p>
+    </div>
+  </aside>
+
+  <nav class="toolbar" aria-label="Scene controls">
+    <button class="tool-button" type="button" data-view="front" data-tip="Front View" aria-label="Front View" aria-pressed="true">Front</button>
+    <button class="tool-button" type="button" data-view="side" data-tip="Side View" aria-label="Side View" aria-pressed="false">Side</button>
+    <button class="tool-button" type="button" data-view="top" data-tip="Top View" aria-label="Top View" aria-pressed="false">Top</button>
+    <button class="tool-button" type="button" data-view="elevated" data-tip="Elevated View" aria-label="Elevated View" aria-pressed="false">Elev.</button>
+    <button id="scatterButton" class="tool-button scatter" type="button" data-tip="Scatter or gather particles" aria-label="Scatter particles" aria-pressed="false">
+      <span class="spark-icon" aria-hidden="true"></span>
+      <span class="button-label">Scatter</span>
+    </button>
+    <button id="handButton" class="tool-button hand" type="button" data-tip="Enable camera hand tracking" aria-label="Enable camera hand tracking" aria-pressed="false">
+      <span class="hand-icon" aria-hidden="true"></span>
+      <span class="button-label">Hand Cam</span>
+    </button>
+  </nav>
+
+  <div id="gestureHint" class="gesture-hint">Drag / pinch to orbit. Touch the heart to ripple stardust. Double tap to scatter.</div>
+  <div id="handStatus" class="hand-status is-hidden">Hand camera ready.</div>
+  <video id="handVideo" class="camera-feed" playsinline muted></video>
+  <div id="loading" class="loading">COSMIC PARTICLE HEART</div>
+  <div id="noWebGL" class="no-webgl">This experience needs WebGL support in your browser.</div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" defer></script>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+    import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+    import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+
+    const canvas = document.querySelector("#scene");
+    const loading = document.querySelector("#loading");
+    const noWebGL = document.querySelector("#noWebGL");
+    const promptPanel = document.querySelector(".prompt-panel");
+    const promptToggle = document.querySelector(".prompt-toggle");
+    const scatterButton = document.querySelector("#scatterButton");
+    const gestureHint = document.querySelector("#gestureHint");
+    const touchAura = document.querySelector("#touchAura");
+    const handButton = document.querySelector("#handButton");
+    const handStatus = document.querySelector("#handStatus");
+    const handVideo = document.querySelector("#handVideo");
+    const viewButtons = [...document.querySelectorAll("[data-view]")];
+
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: false,
+        powerPreference: "high-performance"
+      });
+    } catch (error) {
+      noWebGL.style.display = "grid";
+      throw error;
+    }
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000004);
+    scene.fog = new THREE.FogExp2(0x020006, 0.048);
+
+    const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 120);
+    camera.position.set(0, 0.34, 8.15);
+
+    renderer.setClearColor(0x000004, 1);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.enablePan = false;
+    controls.minDistance = 3.45;
+    controls.maxDistance = 13.5;
+    controls.rotateSpeed = 0.45;
+    controls.zoomSpeed = 0.62;
+    controls.target.set(0, 0.05, 0);
+    controls.update();
+
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      1.28,
+      0.72,
+      0.035
+    );
+    composer.addPass(bloomPass);
+
+    const clock = new THREE.Clock();
+    const heartGroup = new THREE.Group();
+    const cloudGroup = new THREE.Group();
+    const orbitGroup = new THREE.Group();
+    const nebulaGroup = new THREE.Group();
+    const starGroup = new THREE.Group();
+    const foregroundGroup = new THREE.Group();
+    scene.add(nebulaGroup, starGroup, cloudGroup, heartGroup, orbitGroup, foregroundGroup);
+
+    const palette = [
+      new THREE.Color(0xff2d68),
+      new THREE.Color(0xff5ca8),
+      new THREE.Color(0xff94ca),
+      new THREE.Color(0xffedf6),
+      new THREE.Color(0xffc96f)
+    ];
+
+    const uniforms = {
+      heart: { uTime: { value: 0 }, uPixelRatio: { value: renderer.getPixelRatio() }, uSizeScale: { value: 1.0 }, uOpacity: { value: 0.98 } },
+      shell: { uTime: { value: 0 }, uPixelRatio: { value: renderer.getPixelRatio() }, uSizeScale: { value: 1.0 }, uOpacity: { value: 0.45 } },
+      stars: { uTime: { value: 0 }, uPixelRatio: { value: renderer.getPixelRatio() }, uSizeScale: { value: 1.0 }, uOpacity: { value: 0.58 } },
+      foreground: { uTime: { value: 0 }, uPixelRatio: { value: renderer.getPixelRatio() }, uSizeScale: { value: 1.0 }, uOpacity: { value: 0.42 } }
+    };
+
+    function makeParticleMaterial(kindUniforms) {
+      return new THREE.ShaderMaterial({
+        uniforms: kindUniforms,
+        transparent: true,
+        depthWrite: false,
+        depthTest: true,
+        vertexColors: true,
+        blending: THREE.AdditiveBlending,
+        vertexShader: `
+          uniform float uTime;
+          uniform float uPixelRatio;
+          uniform float uSizeScale;
+          attribute float aSize;
+          attribute float aSeed;
+          varying vec3 vColor;
+          varying float vPulse;
+          void main() {
+            vColor = color;
+            vPulse = 0.68 + 0.32 * sin(uTime * 1.18 + aSeed * 6.28318 + position.x * 1.6);
+            vec3 p = position;
+            vec3 driftDir = normalize(position + vec3(0.001, 0.002, 0.003));
+            p += driftDir * sin(uTime * 0.38 + aSeed * 8.0) * 0.014;
+            vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+            gl_PointSize = aSize * uSizeScale * uPixelRatio * (390.0 / max(0.6, -mvPosition.z)) * (0.82 + 0.18 * vPulse);
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `,
+        fragmentShader: `
+          uniform float uOpacity;
+          varying vec3 vColor;
+          varying float vPulse;
+          void main() {
+            vec2 uv = gl_PointCoord - vec2(0.5);
+            float d = length(uv);
+            float core = smoothstep(0.145, 0.0, d);
+            float halo = smoothstep(0.5, 0.055, d);
+            float rim = smoothstep(0.5, 0.46, d);
+            float alpha = (core * 0.95 + halo * 0.56) * uOpacity * (0.66 + 0.34 * vPulse) * rim;
+            if (alpha < 0.014) discard;
+            vec3 color = vColor * (1.12 + core * 1.8 + halo * 0.25);
+            gl_FragColor = vec4(color, alpha);
+          }
+        `
+      });
+    }
+
+    const heartMaterial = makeParticleMaterial(uniforms.heart);
+    const shellMaterial = makeParticleMaterial(uniforms.shell);
+    const starMaterial = makeParticleMaterial(uniforms.stars);
+    const foregroundMaterial = makeParticleMaterial(uniforms.foreground);
+
+    function heartOutlinePoint(t) {
+      const sin = Math.sin(t);
+      const cos = Math.cos(t);
+      const xRaw = 16 * sin * sin * sin;
+      const yRaw = 13 * cos - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+      return {
+        x: (xRaw / 16) * 1.54,
+        y: ((yRaw + 2.45) / 16.2) * 1.76 - 0.04
+      };
+    }
+
+    function pickHeartColor(depth, seed) {
+      const r = fract(seed * 17.17);
+      let c;
+      if (r < 0.18) c = palette[3];
+      else if (r < 0.34) c = palette[2];
+      else if (r < 0.52) c = palette[4];
+      else if (r < 0.78) c = palette[1];
+      else c = palette[0];
+      const mix = new THREE.Color(0xfff5fb);
+      return c.clone().lerp(mix, Math.max(0, depth) * 0.1 + (r < 0.18 ? 0.12 : 0));
+    }
+
+    function fract(v) {
+      return v - Math.floor(v);
+    }
+
+    const HEART_COUNT = 12800;
+    const TRAIL_COUNT = 3600;
+    const targetPositions = new Float32Array(HEART_COUNT * 3);
+    const scatterPositions = new Float32Array(HEART_COUNT * 3);
+    const workingPositions = new Float32Array(HEART_COUNT * 3);
+    const heartColors = new Float32Array(HEART_COUNT * 3);
+    const heartSizes = new Float32Array(HEART_COUNT);
+    const heartSeeds = new Float32Array(HEART_COUNT);
+    const jitterVectors = new Float32Array(HEART_COUNT * 3);
+
+    for (let i = 0; i < HEART_COUNT; i++) {
+      const t = Math.random() * Math.PI * 2;
+      const edge = heartOutlinePoint(t);
+      const nearSurface = Math.random() < 0.56;
+      const fill = nearSurface ? 0.84 + Math.random() * 0.18 : Math.pow(Math.random(), 0.58) * 0.88;
+      let x = edge.x * fill;
+      let y = edge.y * fill;
+      const zBase = (Math.random() * 2 - 1) * (0.32 + 0.68 * (1 - fill * 0.18));
+      const z = zBase * (0.54 + 0.22 * Math.sin(t * 2.0 + fill));
+      const layerScale = 1 - 0.16 * Math.pow(Math.min(1, Math.abs(z) / 0.74), 1.7);
+      x *= layerScale;
+      y *= layerScale;
+      const seed = Math.random();
+      const index = i * 3;
+
+      targetPositions[index] = x;
+      targetPositions[index + 1] = y;
+      targetPositions[index + 2] = z;
+      workingPositions[index] = x;
+      workingPositions[index + 1] = y;
+      workingPositions[index + 2] = z;
+
+      const radial = new THREE.Vector3(x, y, z).normalize();
+      const scatterRadius = 4.1 + Math.random() * 4.9;
+      const spin = t + (Math.random() - 0.5) * 1.25 + z * 0.95;
+      scatterPositions[index] = radial.x * scatterRadius + Math.cos(spin) * (0.7 + Math.random() * 1.4);
+      scatterPositions[index + 1] = radial.y * scatterRadius + (Math.random() - 0.5) * 2.6;
+      scatterPositions[index + 2] = radial.z * scatterRadius + Math.sin(spin) * (0.7 + Math.random() * 1.7);
+
+      const color = pickHeartColor(Math.abs(z), seed);
+      heartColors[index] = color.r;
+      heartColors[index + 1] = color.g;
+      heartColors[index + 2] = color.b;
+      heartSizes[i] = nearSurface ? 0.027 + Math.random() * 0.028 : 0.018 + Math.random() * 0.023;
+      heartSeeds[i] = seed;
+
+      jitterVectors[index] = (Math.random() * 2 - 1) * 0.06;
+      jitterVectors[index + 1] = (Math.random() * 2 - 1) * 0.06;
+      jitterVectors[index + 2] = (Math.random() * 2 - 1) * 0.06;
+    }
+
+    const heartGeometry = new THREE.BufferGeometry();
+    heartGeometry.setAttribute("position", new THREE.BufferAttribute(workingPositions, 3));
+    heartGeometry.setAttribute("color", new THREE.BufferAttribute(heartColors, 3));
+    heartGeometry.setAttribute("aSize", new THREE.BufferAttribute(heartSizes, 1));
+    heartGeometry.setAttribute("aSeed", new THREE.BufferAttribute(heartSeeds, 1));
+    const heartParticles = new THREE.Points(heartGeometry, heartMaterial);
+    heartParticles.frustumCulled = false;
+    heartGroup.add(heartParticles);
+
+    const trailIndices = new Uint32Array(TRAIL_COUNT);
+    const trailPositions = new Float32Array(TRAIL_COUNT * 2 * 3);
+    const trailColors = new Float32Array(TRAIL_COUNT * 2 * 3);
+    const trailDirs = new Float32Array(TRAIL_COUNT * 3);
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+      const particleIndex = Math.floor(Math.random() * HEART_COUNT);
+      trailIndices[i] = particleIndex;
+      const src = particleIndex * 3;
+      const dst = i * 6;
+      trailPositions[dst] = targetPositions[src];
+      trailPositions[dst + 1] = targetPositions[src + 1];
+      trailPositions[dst + 2] = targetPositions[src + 2];
+      trailPositions[dst + 3] = targetPositions[src];
+      trailPositions[dst + 4] = targetPositions[src + 1];
+      trailPositions[dst + 5] = targetPositions[src + 2];
+
+      const p = new THREE.Vector3(targetPositions[src], targetPositions[src + 1], targetPositions[src + 2]).normalize();
+      const tangent = new THREE.Vector3(-p.z + 0.18, 0.12 + p.x * 0.25, p.x + 0.08).normalize();
+      trailDirs[i * 3] = tangent.x;
+      trailDirs[i * 3 + 1] = tangent.y;
+      trailDirs[i * 3 + 2] = tangent.z;
+
+      trailColors[dst] = heartColors[src] * 1.08;
+      trailColors[dst + 1] = heartColors[src + 1] * 1.08;
+      trailColors[dst + 2] = heartColors[src + 2] * 1.08;
+      trailColors[dst + 3] = heartColors[src] * 0.28;
+      trailColors[dst + 4] = heartColors[src + 1] * 0.28;
+      trailColors[dst + 5] = heartColors[src + 2] * 0.28;
+    }
+
+    const trailGeometry = new THREE.BufferGeometry();
+    trailGeometry.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
+    trailGeometry.setAttribute("color", new THREE.BufferAttribute(trailColors, 3));
+    const trailMaterial = new THREE.LineBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.34,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const trailLines = new THREE.LineSegments(trailGeometry, trailMaterial);
+    trailLines.frustumCulled = false;
+    heartGroup.add(trailLines);
+
+    const outlineGroup = new THREE.Group();
+    const outlineMaterials = [];
+    for (let layer = -3; layer <= 3; layer++) {
+      const z = layer * 0.18;
+      const scale = 1 - Math.abs(layer) * 0.035;
+      const points = [];
+      for (let i = 0; i <= 280; i++) {
+        const p = heartOutlinePoint((i / 280) * Math.PI * 2);
+        points.push(new THREE.Vector3(p.x * scale, p.y * scale, z));
+      }
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({
+        color: layer === 0 ? 0xff9ccc : 0xff407e,
+        transparent: true,
+        opacity: layer === 0 ? 0.24 : 0.11,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      outlineMaterials.push(material);
+      outlineGroup.add(new THREE.Line(geometry, material));
+    }
+    heartGroup.add(outlineGroup);
+
+    function makeShell() {
+      const count = 7200;
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      const sizes = new Float32Array(count);
+      const seeds = new Float32Array(count);
+
+      for (let i = 0; i < count; i++) {
+        const u = Math.random() * Math.PI * 2;
+        const v = Math.acos(Math.random() * 2 - 1);
+        const shell = 1 + Math.pow(Math.random(), 1.4) * 0.44;
+        let x = Math.sin(v) * Math.cos(u) * 2.65 * shell;
+        let y = Math.cos(v) * 2.92 * shell;
+        let z = Math.sin(v) * Math.sin(u) * 1.95 * shell;
+        const swirl = 0.32 * y + Math.sin(y * 1.8) * 0.18;
+        const cs = Math.cos(swirl);
+        const sn = Math.sin(swirl);
+        const rx = x * cs - z * sn;
+        const rz = x * sn + z * cs;
+        x = rx + Math.sin(u * 3.0 + y) * 0.22;
+        z = rz + Math.cos(u * 2.0 - y) * 0.16;
+        const index = i * 3;
+        positions[index] = x;
+        positions[index + 1] = y + 0.05;
+        positions[index + 2] = z;
+
+        const color = new THREE.Color();
+        const r = Math.random();
+        if (r < 0.42) color.set(0xff477f);
+        else if (r < 0.72) color.set(0xff91c7);
+        else if (r < 0.9) color.set(0xffc56f);
+        else color.set(0xd9e4ff);
+        color.multiplyScalar(0.62 + Math.random() * 0.55);
+        colors[index] = color.r;
+        colors[index + 1] = color.g;
+        colors[index + 2] = color.b;
+        sizes[i] = 0.012 + Math.random() * 0.026;
+        seeds[i] = Math.random();
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      geometry.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+      geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
+      const points = new THREE.Points(geometry, shellMaterial);
+      points.frustumCulled = false;
+      return points;
+    }
+
+    cloudGroup.add(makeShell());
+
+    function makeStars(count, radiusMin, radiusMax, foreground = false) {
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      const sizes = new Float32Array(count);
+      const seeds = new Float32Array(count);
+
+      for (let i = 0; i < count; i++) {
+        const index = i * 3;
+        if (foreground) {
+          positions[index] = (Math.random() * 2 - 1) * 8.5;
+          positions[index + 1] = (Math.random() * 2 - 1) * 4.8;
+          positions[index + 2] = 1.0 + Math.random() * 6.8;
+        } else {
+          const dir = new THREE.Vector3(
+            Math.random() * 2 - 1,
+            Math.random() * 2 - 1,
+            Math.random() * 2 - 1
+          ).normalize();
+          const radius = radiusMin + Math.random() * (radiusMax - radiusMin);
+          positions[index] = dir.x * radius;
+          positions[index + 1] = dir.y * radius;
+          positions[index + 2] = dir.z * radius;
+        }
+        const color = new THREE.Color(Math.random() < 0.18 ? 0xffbfdc : 0xf7fbff);
+        color.lerp(new THREE.Color(0xffcf8a), Math.random() * 0.16);
+        color.multiplyScalar(foreground ? 0.62 : 0.5 + Math.random() * 0.5);
+        colors[index] = color.r;
+        colors[index + 1] = color.g;
+        colors[index + 2] = color.b;
+        sizes[i] = foreground ? 0.012 + Math.random() * 0.032 : 0.006 + Math.random() * 0.018;
+        seeds[i] = Math.random();
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      geometry.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+      geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
+      return new THREE.Points(geometry, foreground ? foregroundMaterial : starMaterial);
+    }
+
+    starGroup.add(makeStars(2600, 15, 46, false));
+    foregroundGroup.add(makeStars(760, 0, 0, true));
+
+    function createNebulaTexture() {
+      const size = 256;
+      const c = document.createElement("canvas");
+      c.width = size;
+      c.height = size;
+      const ctx = c.getContext("2d");
+      const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      gradient.addColorStop(0, "rgba(255,255,255,0.95)");
+      gradient.addColorStop(0.18, "rgba(255,255,255,0.42)");
+      gradient.addColorStop(0.42, "rgba(255,255,255,0.12)");
+      gradient.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      for (let i = 0; i < 900; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const alpha = Math.random() * 0.055;
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+      const texture = new THREE.CanvasTexture(c);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return texture;
+    }
+
+    const nebulaTexture = createNebulaTexture();
+    const nebulaSpecs = [
+      { color: 0xff3275, position: [-2.6, 1.1, -4.1], scale: [5.4, 2.6, 1], opacity: 0.12 },
+      { color: 0xffb269, position: [2.4, -1.15, -3.6], scale: [4.9, 2.1, 1], opacity: 0.1 },
+      { color: 0xa86cff, position: [2.8, 1.55, -5.2], scale: [4.2, 2.8, 1], opacity: 0.07 },
+      { color: 0xff79b7, position: [-0.3, -1.9, -4.7], scale: [6.2, 2.4, 1], opacity: 0.08 }
+    ];
+    for (const spec of nebulaSpecs) {
+      const material = new THREE.SpriteMaterial({
+        map: nebulaTexture,
+        color: spec.color,
+        transparent: true,
+        opacity: spec.opacity,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const sprite = new THREE.Sprite(material);
+      sprite.position.set(...spec.position);
+      sprite.scale.set(...spec.scale);
+      nebulaGroup.add(sprite);
+    }
+
+    function makeTrailMaterial(color, opacity, phase) {
+      return new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uColor: { value: new THREE.Color(color) },
+          uOpacity: { value: opacity },
+          uPhase: { value: phase }
+        },
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform vec3 uColor;
+          uniform float uOpacity;
+          uniform float uPhase;
+          varying vec2 vUv;
+          void main() {
+            float wave = 0.5 + 0.5 * sin((vUv.x * 8.0 - uTime * 0.18 + uPhase) * 6.28318);
+            float narrow = smoothstep(0.36, 0.98, wave);
+            float soft = 0.22 + 0.78 * narrow;
+            float edge = smoothstep(0.0, 0.08, vUv.x) * smoothstep(1.0, 0.92, vUv.x);
+            gl_FragColor = vec4(uColor * (1.1 + narrow * 1.6), uOpacity * soft * edge);
+          }
+        `
+      });
+    }
+
+    const orbitMaterials = [];
+    function makeOrbit(rx, ry, rz, color, opacity, tubeRadius, tiltX, tiltY, phase) {
+      const points = [];
+      for (let i = 0; i <= 260; i++) {
+        const a = (i / 260) * Math.PI * 2;
+        points.push(new THREE.Vector3(
+          Math.cos(a) * rx,
+          Math.sin(a) * ry + Math.sin(a * 2.0 + phase) * 0.16,
+          Math.sin(a) * rz
+        ));
+      }
+      const curve = new THREE.CatmullRomCurve3(points, true, "catmullrom", 0.35);
+      const geometry = new THREE.TubeGeometry(curve, 260, tubeRadius, 8, true);
+      const material = makeTrailMaterial(color, opacity, phase);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.rotation.x = tiltX;
+      mesh.rotation.y = tiltY;
+      orbitMaterials.push(material);
+      orbitGroup.add(mesh);
+    }
+
+    makeOrbit(3.35, 0.54, 2.28, 0xff76bc, 0.25, 0.008, 0.42, -0.08, 0.0);
+    makeOrbit(2.55, 1.12, 2.92, 0xffc278, 0.18, 0.006, -0.72, 0.42, 0.28);
+    makeOrbit(3.95, 0.82, 1.86, 0xff4285, 0.16, 0.005, 0.12, 0.9, 0.62);
+    makeOrbit(1.85, 1.75, 2.1, 0xeec7ff, 0.1, 0.004, 1.14, -0.24, 0.86);
+
+    const baseViews = {
+      front: { position: new THREE.Vector3(0, 0.34, 8.15), up: new THREE.Vector3(0, 1, 0) },
+      side: { position: new THREE.Vector3(7.35, 0.34, 0.08), up: new THREE.Vector3(0, 1, 0) },
+      top: { position: new THREE.Vector3(0.02, 8.4, 0.06), up: new THREE.Vector3(0, 0, -1) },
+      elevated: { position: new THREE.Vector3(4.9, 3.0, 6.0), up: new THREE.Vector3(0, 1, 0) }
+    };
+    let currentView = "front";
+
+    function getView(viewName) {
+      const source = baseViews[viewName] || baseViews.front;
+      const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+      const narrowBoost = aspect < 0.72 ? THREE.MathUtils.mapLinear(aspect, 0.42, 0.72, 1.42, 1.12) : 1;
+      const phoneBoost = window.innerWidth < 760 ? narrowBoost : 1;
+      return {
+        position: source.position.clone().multiplyScalar(phoneBoost),
+        up: source.up.clone()
+      };
+    }
+
+    let cameraTween = null;
+    function smooth01(t) {
+      return t * t * (3 - 2 * t);
+    }
+
+    function moveCameraTo(viewName) {
+      const view = getView(viewName);
+      currentView = viewName;
+      cameraTween = {
+        start: performance.now(),
+        duration: 1120,
+        fromPosition: camera.position.clone(),
+        toPosition: view.position.clone(),
+        fromUp: camera.up.clone(),
+        toUp: view.up.clone()
+      };
+      viewButtons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.view === viewName));
+      });
+    }
+
+    viewButtons.forEach((button) => {
+      button.addEventListener("click", () => moveCameraTo(button.dataset.view));
+    });
+
+    promptToggle.addEventListener("click", () => {
+      promptPanel.dataset.collapsed = String(promptPanel.dataset.collapsed !== "true");
+    });
+
+    let scatterTarget = 0;
+    let scatterProgress = 0;
+    function setScatterState(nextState) {
+      scatterTarget = nextState > 0.5 ? 1 : 0;
+      scatterButton.setAttribute("aria-pressed", String(scatterTarget > 0.5));
+      scatterButton.setAttribute("aria-label", scatterTarget > 0.5 ? "Gather particles" : "Scatter particles");
+      scatterButton.querySelector(".button-label").textContent = scatterTarget > 0.5 ? "Gather" : "Scatter";
+    }
+
+    function toggleScatter() {
+      setScatterState(scatterTarget > 0.5 ? 0 : 1);
+    }
+
+    scatterButton.addEventListener("click", () => {
+      toggleScatter();
+    });
+
+    const pointerState = {
+      active: false,
+      x: 0.5,
+      y: 0.5,
+      prevX: 0.5,
+      prevY: 0.5,
+      velocityX: 0,
+      velocityY: 0,
+      strength: 0,
+      pulse: 0,
+      cameraKickX: 0,
+      cameraKickY: 0,
+      interactionCount: 0,
+      lastTap: 0,
+      hintTimer: 0
+    };
+
+    function setPointerPosition(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const x = THREE.MathUtils.clamp((clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+      const y = THREE.MathUtils.clamp((clientY - rect.top) / Math.max(1, rect.height), 0, 1);
+      pointerState.velocityX = x - pointerState.x;
+      pointerState.velocityY = y - pointerState.y;
+      pointerState.prevX = pointerState.x;
+      pointerState.prevY = pointerState.y;
+      pointerState.x = x;
+      pointerState.y = y;
+      touchAura.style.setProperty("--x", `${clientX}px`);
+      touchAura.style.setProperty("--y", `${clientY}px`);
+    }
+
+    function setPointerFromEvent(event) {
+      setPointerPosition(event.clientX, event.clientY);
+    }
+
+    function showTouchAura(burst = false) {
+      if (burst) {
+        touchAura.classList.remove("is-burst");
+        void touchAura.offsetWidth;
+        touchAura.classList.add("is-burst");
+      }
+      touchAura.classList.add("is-active");
+    }
+
+    function registerGesturePulseFromPoint(clientX, clientY, strong = false, burst = false) {
+      setPointerPosition(clientX, clientY);
+      pointerState.pulse = Math.max(pointerState.pulse, strong ? 2.35 : 1.34);
+      pointerState.strength = Math.max(pointerState.strength, strong ? 1.9 : 1.1);
+      pointerState.interactionCount += 1;
+      pointerState.cameraKickX += (pointerState.x - 0.5) * (strong ? 0.42 : 0.24);
+      pointerState.cameraKickY += (0.5 - pointerState.y) * (strong ? 0.34 : 0.2);
+      showTouchAura(burst || strong);
+      window.clearTimeout(pointerState.hintTimer);
+      pointerState.hintTimer = window.setTimeout(() => {
+        gestureHint.classList.add("is-hidden");
+      }, 1600);
+    }
+
+    function registerGesturePulse(event, strong = false, burst = false) {
+      registerGesturePulseFromPoint(event.clientX, event.clientY, strong, burst);
+    }
+
+    function isUiTarget(event) {
+      return Boolean(event.target.closest?.(".toolbar, .prompt-panel, button"));
+    }
+
+    function handlePointerDown(event) {
+      if (isUiTarget(event)) return;
+      pointerState.active = true;
+      registerGesturePulse(event, true, true);
+      const now = performance.now();
+      if (now - pointerState.lastTap < 330) {
+        toggleScatter();
+        pointerState.pulse = 2.8;
+        pointerState.strength = 2.2;
+        showTouchAura(true);
+      }
+      pointerState.lastTap = now;
+    }
+
+    function handlePointerMove(event) {
+      if (isUiTarget(event)) return;
+      setPointerFromEvent(event);
+      if (pointerState.active) {
+        const speed = Math.hypot(pointerState.velocityX, pointerState.velocityY);
+        pointerState.strength = Math.max(pointerState.strength, Math.min(2.2, 0.55 + speed * 64));
+        pointerState.pulse = Math.max(pointerState.pulse, Math.min(1.8, 0.26 + speed * 42));
+        pointerState.interactionCount += 1;
+        pointerState.cameraKickX += pointerState.velocityX * 0.52;
+        pointerState.cameraKickY -= pointerState.velocityY * 0.42;
+        showTouchAura(false);
+      }
+    }
+
+    function endPointerGesture() {
+      pointerState.active = false;
+      touchAura.classList.remove("is-active");
+    }
+
+    function handleTouchStart(event) {
+      if (isUiTarget(event)) return;
+      if (event.touches.length === 1) {
+        const touch = event.touches[0];
+        pointerState.active = true;
+        registerGesturePulseFromPoint(touch.clientX, touch.clientY, true, true);
+      }
+    }
+
+    function handleTouchMove(event) {
+      if (isUiTarget(event) || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const beforeX = pointerState.x;
+      const beforeY = pointerState.y;
+      setPointerPosition(touch.clientX, touch.clientY);
+      pointerState.velocityX = pointerState.x - beforeX;
+      pointerState.velocityY = pointerState.y - beforeY;
+      const speed = Math.hypot(pointerState.velocityX, pointerState.velocityY);
+      pointerState.strength = Math.max(pointerState.strength, Math.min(2.35, 0.62 + speed * 70));
+      pointerState.pulse = Math.max(pointerState.pulse, Math.min(1.9, 0.32 + speed * 48));
+      pointerState.interactionCount += 1;
+      pointerState.cameraKickX += pointerState.velocityX * 0.58;
+      pointerState.cameraKickY -= pointerState.velocityY * 0.46;
+      showTouchAura(false);
+    }
+
+    window.addEventListener("pointerdown", handlePointerDown, { passive: true });
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    window.addEventListener("pointerup", endPointerGesture, { passive: true });
+    window.addEventListener("pointercancel", endPointerGesture, { passive: true });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", endPointerGesture, { passive: true });
+    window.addEventListener("mousemove", (event) => {
+      if (!pointerState.active || isUiTarget(event)) return;
+      handlePointerMove(event);
+    }, { passive: true });
+
+    const handState = {
+      enabled: false,
+      running: false,
+      stream: null,
+      hands: null,
+      raf: 0,
+      lastPinch: false,
+      lastPinchAt: 0,
+      lastSeenAt: 0
+    };
+
+    function setHandStatus(message, active = false) {
+      handStatus.textContent = message;
+      handStatus.classList.remove("is-hidden");
+      handStatus.classList.toggle("is-active", active);
+    }
+
+    function waitForHandsLibrary(timeoutMs = 9000) {
+      return new Promise((resolve, reject) => {
+        const start = performance.now();
+        const check = () => {
+          if (window.Hands) {
+            resolve();
+            return;
+          }
+          if (performance.now() - start > timeoutMs) {
+            reject(new Error("Hand tracking library did not load."));
+            return;
+          }
+          window.setTimeout(check, 120);
+        };
+        check();
+      });
+    }
+
+    function distance2D(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function handleHandResults(results) {
+      const landmarks = results.multiHandLandmarks?.[0];
+      if (!landmarks) {
+        if (handState.enabled && performance.now() - handState.lastSeenAt > 900) {
+          setHandStatus("Show one hand to control the heart.", false);
+        }
+        return;
+      }
+
+      handState.lastSeenAt = performance.now();
+      const wrist = landmarks[0];
+      const middle = landmarks[9];
+      const thumbTip = landmarks[4];
+      const indexTip = landmarks[8];
+      const palmX = 1 - (wrist.x * 0.36 + middle.x * 0.64);
+      const palmY = wrist.y * 0.32 + middle.y * 0.68;
+      const clientX = palmX * window.innerWidth;
+      const clientY = palmY * window.innerHeight;
+      registerGesturePulseFromPoint(clientX, clientY, false, false);
+      pointerState.active = true;
+      pointerState.strength = Math.max(pointerState.strength, 1.45);
+      pointerState.pulse = Math.max(pointerState.pulse, 0.96);
+
+      const pinchDistance = distance2D(thumbTip, indexTip);
+      const pinchNow = pinchDistance < 0.055;
+      const now = performance.now();
+      if (pinchNow && !handState.lastPinch && now - handState.lastPinchAt > 900) {
+        toggleScatter();
+        pointerState.pulse = 3.0;
+        pointerState.strength = 2.45;
+        registerGesturePulseFromPoint(clientX, clientY, true, true);
+        handState.lastPinchAt = now;
+      }
+      handState.lastPinch = pinchNow;
+      setHandStatus(pinchNow ? "Pinch detected. Scatter toggled." : "Hand tracking active. Move palm. Pinch to scatter.", true);
+    }
+
+    async function processHandFrame() {
+      if (!handState.running || !handState.hands) return;
+      if (handVideo.readyState >= 2) {
+        await handState.hands.send({ image: handVideo });
+      }
+      handState.raf = requestAnimationFrame(processHandFrame);
+    }
+
+    async function enableHandTracking() {
+      if (handState.enabled) return;
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Camera access is unavailable in this browser.");
+        }
+        setHandStatus("Loading hand tracking...", true);
+        await waitForHandsLibrary();
+        handState.hands = new window.Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+        handState.hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.62,
+          minTrackingConfidence: 0.58
+        });
+        handState.hands.onResults(handleHandResults);
+        handState.stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user",
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        });
+        handVideo.srcObject = handState.stream;
+        await handVideo.play();
+        handVideo.classList.add("is-visible");
+        handState.enabled = true;
+        handState.running = true;
+        handButton.setAttribute("aria-pressed", "true");
+        handButton.setAttribute("aria-label", "Disable camera hand tracking");
+        handButton.querySelector(".button-label").textContent = "Hands On";
+        setHandStatus("Hand tracking active. Move palm. Pinch to scatter.", true);
+        processHandFrame();
+      } catch (error) {
+        setHandStatus(error.message || "Could not start camera hand tracking.", false);
+        handButton.setAttribute("aria-pressed", "false");
+      }
+    }
+
+    function disableHandTracking() {
+      handState.enabled = false;
+      handState.running = false;
+      pointerState.active = false;
+      cancelAnimationFrame(handState.raf);
+      if (handState.stream) {
+        handState.stream.getTracks().forEach((track) => track.stop());
+      }
+      handState.stream = null;
+      handVideo.pause();
+      handVideo.srcObject = null;
+      handVideo.classList.remove("is-visible");
+      handButton.setAttribute("aria-pressed", "false");
+      handButton.setAttribute("aria-label", "Enable camera hand tracking");
+      handButton.querySelector(".button-label").textContent = "Hand Cam";
+      setHandStatus("Hand camera off.", false);
+      window.setTimeout(() => {
+        if (!handState.enabled) handStatus.classList.add("is-hidden");
+      }, 1400);
+    }
+
+    handButton.addEventListener("click", () => {
+      if (handState.enabled || handState.running) {
+        disableHandTracking();
+      } else {
+        enableHandTracking();
+      }
+    });
+
+    window.cosmicHeartDebug = {
+      triggerGesture(x = window.innerWidth * 0.5, y = window.innerHeight * 0.48) {
+        registerGesturePulseFromPoint(x, y, true, true);
+        return {
+          interactionCount: pointerState.interactionCount,
+          strength: pointerState.strength,
+          pulse: pointerState.pulse
+        };
+      },
+      state() {
+        return {
+          active: pointerState.active,
+          interactionCount: pointerState.interactionCount,
+          strength: pointerState.strength,
+          pulse: pointerState.pulse,
+          scatterTarget
+        };
+      },
+      simulateHand(pinch = false) {
+        const landmarks = Array.from({ length: 21 }, () => ({ x: 0.5, y: 0.5, z: 0 }));
+        landmarks[0] = { x: 0.52, y: 0.58, z: 0 };
+        landmarks[4] = { x: pinch ? 0.48 : 0.35, y: 0.42, z: 0 };
+        landmarks[8] = { x: 0.5, y: 0.43, z: 0 };
+        landmarks[9] = { x: 0.47, y: 0.5, z: 0 };
+        handleHandResults({ multiHandLandmarks: [landmarks] });
+        return this.state();
+      }
+    };
+
+    function updateHeartParticles(time, delta) {
+      scatterProgress += (scatterTarget - scatterProgress) * Math.min(1, delta * 1.9);
+      const s = smooth01(scatterProgress);
+      const positions = heartGeometry.attributes.position.array;
+      const gestureEnergy = pointerState.strength + pointerState.pulse * 0.72;
+      const breathe = 1 + Math.sin(time * 1.16) * 0.012 + Math.min(0.075, gestureEnergy * 0.025);
+      const pointerX = (pointerState.x - 0.5) * 3.7;
+      const pointerY = -(pointerState.y - 0.5) * 3.15;
+      for (let i = 0; i < HEART_COUNT; i++) {
+        const index = i * 3;
+        const seed = heartSeeds[i];
+        const floatAmp = 0.015 + s * 0.075;
+        const wave = Math.sin(time * (0.74 + seed * 0.45) + seed * 19.0);
+        const x = targetPositions[index] * (1 - s) + scatterPositions[index] * s;
+        const y = targetPositions[index + 1] * (1 - s) + scatterPositions[index + 1] * s;
+        const z = targetPositions[index + 2] * (1 - s) + scatterPositions[index + 2] * s;
+        const dx = x - pointerX;
+        const dy = y - pointerY;
+        const dz = z * 0.42;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) + 0.001;
+        const influence = Math.exp(-dist * 0.86) * gestureEnergy;
+        const swirl = Math.sin(time * 6.0 + seed * 23.0 + dist * 5.4) * influence;
+        const ripple = Math.sin(dist * 9.5 - time * 8.2 + pointerState.pulse * 4.0) * influence;
+        positions[index] = x * breathe + jitterVectors[index] * wave * floatAmp + dx / dist * ripple * 0.18 - pointerState.velocityX * influence * 4.8 - dy * swirl * 0.055;
+        positions[index + 1] = y * breathe + jitterVectors[index + 1] * Math.cos(time * 0.6 + seed * 11.0) * floatAmp + dy / dist * ripple * 0.18 + pointerState.velocityY * influence * 4.8 + dx * swirl * 0.055;
+        positions[index + 2] = z * breathe + jitterVectors[index + 2] * Math.sin(time * 0.68 + seed * 13.0) * floatAmp + influence * (0.26 + ripple * 0.28) * Math.sin(seed * 31.0 + time);
+      }
+      heartGeometry.attributes.position.needsUpdate = true;
+
+      const lineArray = trailGeometry.attributes.position.array;
+      const trailBoost = 1 + s * 1.8;
+      for (let i = 0; i < TRAIL_COUNT; i++) {
+        const particleIndex = trailIndices[i] * 3;
+        const dst = i * 6;
+        const phase = heartSeeds[trailIndices[i]] * 11.0;
+        const len = (0.055 + 0.075 * fract(phase)) * trailBoost * (0.72 + 0.28 * Math.sin(time * 1.4 + phase));
+        const dirIndex = i * 3;
+        const px = positions[particleIndex];
+        const py = positions[particleIndex + 1];
+        const pz = positions[particleIndex + 2];
+        const flow = Math.sin(time * 1.2 + phase) * 0.025;
+        lineArray[dst] = px;
+        lineArray[dst + 1] = py;
+        lineArray[dst + 2] = pz;
+        lineArray[dst + 3] = px - trailDirs[dirIndex] * len - pz * 0.018 + flow;
+        lineArray[dst + 4] = py - trailDirs[dirIndex + 1] * len + Math.sin(phase + time) * 0.012;
+        lineArray[dst + 5] = pz - trailDirs[dirIndex + 2] * len + px * 0.018;
+      }
+      trailGeometry.attributes.position.needsUpdate = true;
+      trailMaterial.opacity = 0.34 * (1 - s * 0.18);
+      outlineMaterials.forEach((material, i) => {
+        material.opacity = (i === 3 ? 0.24 : 0.11) * (1 - s);
+      });
+      pointerState.strength += ((pointerState.active ? 0.56 : 0) - pointerState.strength) * Math.min(1, delta * 2.9);
+      pointerState.pulse += (0 - pointerState.pulse) * Math.min(1, delta * 1.55);
+      pointerState.velocityX *= Math.max(0, 1 - delta * 8);
+      pointerState.velocityY *= Math.max(0, 1 - delta * 8);
+      pointerState.cameraKickX *= Math.max(0, 1 - delta * 3.4);
+      pointerState.cameraKickY *= Math.max(0, 1 - delta * 3.4);
+    }
+
+    function resize() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(pixelRatio);
+      renderer.setSize(width, height);
+      composer.setSize(width, height);
+      bloomPass.setSize(width, height);
+      uniforms.heart.uPixelRatio.value = pixelRatio;
+      uniforms.shell.uPixelRatio.value = pixelRatio;
+      uniforms.stars.uPixelRatio.value = pixelRatio;
+      uniforms.foreground.uPixelRatio.value = pixelRatio;
+      uniforms.heart.uSizeScale.value = width < 760 ? 0.78 : 1.0;
+      uniforms.shell.uSizeScale.value = width < 760 ? 0.78 : 1.0;
+      uniforms.foreground.uSizeScale.value = width < 760 ? 0.72 : 1.0;
+      bloomPass.strength = width < 760 ? 1.05 : 1.28;
+      if (!cameraTween && width < 760) {
+        const view = getView(currentView);
+        const distanceDelta = Math.abs(camera.position.length() - view.position.length());
+        if (distanceDelta > 0.25) {
+          camera.position.copy(view.position);
+          camera.up.copy(view.up);
+          controls.update();
+        }
+      }
+    }
+    window.addEventListener("resize", resize, { passive: true });
+    resize();
+
+    function animate() {
+      const delta = Math.min(0.04, clock.getDelta());
+      const time = clock.elapsedTime;
+
+      updateHeartParticles(time, delta);
+
+      uniforms.heart.uTime.value = time;
+      uniforms.shell.uTime.value = time;
+      uniforms.stars.uTime.value = time;
+      uniforms.foreground.uTime.value = time;
+      orbitMaterials.forEach((material) => {
+        material.uniforms.uTime.value = time;
+      });
+
+      heartGroup.rotation.y += delta * (0.055 + scatterProgress * 0.04);
+      heartGroup.rotation.x = Math.sin(time * 0.22) * 0.045 + pointerState.cameraKickY * 0.38;
+      heartGroup.rotation.z = Math.sin(time * 0.16) * 0.026 + pointerState.velocityX * 2.4;
+      cloudGroup.rotation.y -= delta * 0.032;
+      cloudGroup.rotation.x = Math.sin(time * 0.12) * 0.09 + pointerState.velocityY * 1.7 + pointerState.cameraKickY * 0.22;
+      cloudGroup.rotation.z = pointerState.cameraKickX * 0.18;
+      orbitGroup.rotation.y += delta * 0.025;
+      orbitGroup.rotation.z = Math.sin(time * 0.1) * 0.025 + pointerState.strength * 0.026;
+      nebulaGroup.rotation.z = Math.sin(time * 0.06) * 0.035;
+      heartGroup.position.x = pointerState.cameraKickX * 0.22;
+      heartGroup.position.y = pointerState.cameraKickY * 0.18;
+      cloudGroup.position.x = -pointerState.cameraKickX * 0.12;
+      cloudGroup.position.y = -pointerState.cameraKickY * 0.08;
+      starGroup.rotation.y += delta * 0.0045;
+      foregroundGroup.rotation.y -= delta * 0.007;
+
+      if (cameraTween) {
+        const t = Math.min(1, (performance.now() - cameraTween.start) / cameraTween.duration);
+        const e = smooth01(t);
+        camera.position.lerpVectors(cameraTween.fromPosition, cameraTween.toPosition, e);
+        camera.up.copy(cameraTween.fromUp).lerp(cameraTween.toUp, e).normalize();
+        controls.target.set(0, 0.05, 0);
+        if (t >= 1) cameraTween = null;
+      }
+
+      controls.update();
+      composer.render();
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(() => {
+      loading.classList.add("is-hidden");
+      window.setTimeout(() => {
+        gestureHint.classList.add("is-awake");
+        registerGesturePulseFromPoint(window.innerWidth * 0.5, window.innerHeight * 0.5, true, true);
+      }, 650);
+      window.setTimeout(() => {
+        gestureHint.classList.remove("is-awake");
+      }, 2600);
+      animate();
+    });
+  </script>
+</body>
+</html>
